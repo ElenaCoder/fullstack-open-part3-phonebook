@@ -7,6 +7,16 @@ app.use(morgan('tiny'));
 
 app.use(express.json());
 
+// Create custom token to log request body
+morgan.token('req-body', (req) => {
+    if (req.method === 'POST') {
+      return JSON.stringify(req.body);
+    }
+    return null;
+  });
+
+app.use(morgan(':method :url :status :res[content-length] - :response-time ms :req-body'));
+
 let persons = [
     {
         id: '1',
@@ -30,9 +40,6 @@ let persons = [
     },
 ];
 
-app.get('/api/persons', (request, response) => {
-    response.json(persons);
-});
 
 app.get('/info', (request, response) => {
     const numEntries = persons.length;
@@ -42,6 +49,10 @@ app.get('/info', (request, response) => {
     <p>Phonebook has info for ${numEntries} people</p>
     <p>${currentTime}</p>
     `);
+});
+
+app.get('/api/persons', (request, response) => {
+    response.json(persons);
 });
 
 app.get('/api/persons/:id', (request, response) => {
