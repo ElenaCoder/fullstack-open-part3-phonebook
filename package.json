@@ -1,0 +1,21 @@
+{
+  "name": "fullstack-open-part3-phonebook",
+  "version": "1.0.0",
+  "description": "",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ElenaCoder/fullstack-open-part3-phonebook.git"
+  },
+  "license": "MIT",
+  "author": "Elena Golovanova",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}
