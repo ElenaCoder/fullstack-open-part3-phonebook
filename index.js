@@ -71,41 +71,46 @@ app.delete('/api/persons/:id', (request, response, next) => {
       .catch(error => next(error));
   });
 
-app.post('/api/persons', (request, response) => {
-    const body = request.body
+  app.post('/api/persons', (request, response) => {
+    const body = request.body;
 
     if (!body.name || !body.number) {
-      return response.status(400).json({ error: 'Both name and number must be provided' })
+        return response.status(400).json({ error: 'Both name and number must be provided' });
     }
 
-    const person = new Person({
-        name: body.name,
-        number: body.number,
-    })
+    // Check if the person already exists by name
+    Person.findOne({ name: body.name }).then(existingPerson => {
+        if (existingPerson) {
+            // If the person exists, update the phone number (redirect to PUT request)
+            const updatedPerson = {
+                name: existingPerson.name,
+                number: body.number,  // Update the phone number
+            };
 
-    person.save().then(savedPerson => {
-      response.json(savedPerson)
-    })
-  })
-
-  app.put('/api/persons/:id', (request, response, next) => {
-    const body = request.body
-
-    const person = {
-        name: body.name,
-        number: body.number,
-    }
-
-    Person.findByIdAndUpdate(request.params.id, person, { new: true })
-      .then(updatedPerson => {
-        if (updatedPerson) {
-          response.json(updatedPerson)
+            // Call the PUT logic directly by using `findByIdAndUpdate` with the existing person's ID
+            Person.findByIdAndUpdate(existingPerson._id, updatedPerson, { new: true })
+                .then(updated => {
+                    response.json(updated);  // Return the updated person
+                })
+                .catch(error => {
+                    response.status(500).json({ error: 'Updating person failed' });
+                });
         } else {
-          response.status(404).end()
+            // If person doesn't exist, create a new person
+            const person = new Person({
+                name: body.name,
+                number: body.number,
+            });
+
+            person.save().then(savedPerson => {
+                response.json(savedPerson);
+            })
+            .catch(error => {
+                response.status(500).json({ error: 'Saving new person failed' });
+            });
         }
-      })
-      .catch(error => next(error))
-  })
+    });
+});
 
   const unknownEndpoint = (request, response) => {
     response.status(404).send({ error: 'unknown endpoint' })
