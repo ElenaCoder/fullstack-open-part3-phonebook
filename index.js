@@ -71,45 +71,46 @@ app.delete('/api/persons/:id', (request, response, next) => {
       .catch(error => next(error));
   });
 
-  app.post('/api/persons', (request, response) => {
-    const body = request.body;
+  app.post('/api/persons', (request, response, next) => {
+    const { name, number } = request.body;
 
-    if (!body.name || !body.number) {
+    if (!name || !number) {
         return response.status(400).json({ error: 'Both name and number must be provided' });
     }
 
     // Check if the person already exists by name
-    Person.findOne({ name: body.name }).then(existingPerson => {
-        if (existingPerson) {
-            // If the person exists, update the phone number (redirect to PUT request)
-            const updatedPerson = {
-                name: existingPerson.name,
-                number: body.number,  // Update the phone number
-            };
+    Person.findOne({ name })
+        .then(existingPerson => {
+            if (existingPerson) {
+                return response.status(400).json({ error: 'Name already exists.' });
+            }
 
-            // Call the PUT logic directly by using `findByIdAndUpdate` with the existing person's ID
-            Person.findByIdAndUpdate(existingPerson._id, updatedPerson, { new: true })
-                .then(updated => {
-                    response.json(updated);  // Return the updated person
-                })
-                .catch(error => {
-                    response.status(500).json({ error: 'Updating person failed' });
-                });
-        } else {
             // If person doesn't exist, create a new person
-            const person = new Person({
-                name: body.name,
-                number: body.number,
-            });
+            const person = new Person({ name, number });
 
-            person.save().then(savedPerson => {
-                response.json(savedPerson);
-            })
-            .catch(error => {
-                response.status(500).json({ error: 'Saving new person failed' });
-            });
-        }
-    });
+            return person.save()
+                .then(savedPerson => response.json(savedPerson))
+                .catch(error => next(error));
+        })
+        .catch(error => next(error));
+});
+
+app.put('/api/persons/:id', (request, response, next) => {
+    const { number } = request.body;
+    const { id } = request.params;
+
+    if (!number) {
+        return response.status(400).json({ error: 'Number must be provided' });
+    }
+
+    Person.findByIdAndUpdate(id, { number }, { new: true, runValidators: true, context: 'query' })
+        .then(updatedPerson => {
+            if (!updatedPerson) {
+                return response.status(404).json({ error: 'Person not found' });
+            }
+            response.json(updatedPerson);
+        })
+        .catch(error => next(error));
 });
 
   const unknownEndpoint = (request, response) => {
